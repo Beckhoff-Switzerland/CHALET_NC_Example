@@ -1,0 +1,317 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="MAIN" Id="{2577fafb-c6d5-48fa-b818-1b410393aaca}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	bInitDone 	: BOOL;	
+
+	AxisMaster 		: FB_NcAxis;
+	AxisSlave 		: FB_NcAxis;	
+	
+	AxisMultigear1 	: FB_NcAxis;  // or FB_Adapter_AXIS_REF if whole axis logic is outside
+	AxisMultigear2 	: FB_NcAxis;  // or FB_Adapter_AXIS_REF if whole axis logic is outside
+	AxisMultigear3	: FB_NcAxis;  // or FB_Adapter_AXIS_REF if whole axis logic is outside
+	AxisMultigear4 	: FB_NcAxis;  // or FB_Adapter_AXIS_REF if whole axis logic is outside
+	
+	bEnable, bMoveRel, bGearIn, bMoveAbs, bStop, bReset, bMultigear, bGearOut, bSeqEndless, bMoveAbsBuffer, bMoveRelBuffer, bSeqeBufferMode : BOOL;	
+	nSeqEndlessStep, nSeqBufferStep : UINT;
+	
+	(*Example of how this FB can be easily visualized on the HMI.
+	The FB_NcAxis_Hmi converts the large FB_NcAxis in an more compact HMI frindly structure*) 
+	//Variante 1:
+	fbHmiAxisMaster : FB_NcAxis_Hmi(AxisMaster);
+	fbHmiAxisSlave : FB_NcAxis_Hmi(AxisSlave);
+	
+	//Variante 2:	
+	nIdx: INT;
+	aFbHmiAxis : ARRAY [0..9] OF FB_NcAxis_Hmi[ (ipAxis := AxisMaster),
+												(ipAxis := AxisSlave),
+												(ipAxis := 0),
+												(ipAxis := 0),
+												(ipAxis := 0),
+												(ipAxis := 0),
+												(ipAxis := 0),
+												(ipAxis := 0),
+												(ipAxis := 0),
+												(ipAxis := 0)];
+                                                  
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*Initialize
+only when each module is initialized can the rest of the program be started. otherwise the execution is skipped with RETURN *)
+IF NOT bInitDone THEN
+		AxisMaster.Initialize();
+		AxisSlave.Initialize();
+		AxisMultigear1.Initialize();
+		AxisMultigear2.Initialize();
+		AxisMultigear3.Initialize();
+		AxisMultigear4.Initialize();
+		
+	bInitDone := AxisMaster.Initialized AND
+					AxisSlave.Initialized AND
+					AxisMultigear1.Initialized AND
+					AxisMultigear2.Initialized AND
+					AxisMultigear3.Initialized AND
+					AxisMultigear4.Initialized;
+					
+	RETURN;
+END_IF
+
+
+(*Enable
+The PowerOn() method is used to request the activation of the axis. The method must be called only once and not permanently. 
+Here in this test program "bEnable" can be toggled once for this purpose. 
+Until the axis is really in active control takes several PLC cycles. 
+Whether the requested axis command is done/busy/error can be checked in the "Feedback" interface of the axis.
+For Example AxisMaster.Feedback.Done, AxisMaster.Feedback.ErrorId,...
+*)
+IF bEnable THEN
+	bEnable := FALSE;
+	AxisMaster.PowerOn();
+	AxisSlave.PowerOn();
+	AxisMultigear1.PowerOn();
+	AxisMultigear2.PowerOn();
+	AxisMultigear3.PowerOn();
+	AxisMultigear4.PowerOn();
+END_IF
+
+IF bStop THEN
+	bStop := FALSE;
+	AxisMaster.Stop(fDeceleration:=500, fJerk:= 10000);
+	AxisSlave.Stop(fDeceleration:=500, fJerk:= 10000);
+END_IF
+
+IF bReset THEN
+	bReset := FALSE;
+	AxisMaster.Reset();
+	AxisSlave.Reset();
+END_IF
+
+(*MoveRelative
+A method always has a fixed number of parameters (VAR_IN) that it must get when it is called. 
+In this example "fDistance" must be set with a value. 
+All other parameters like "fVelocity", "fAcceleration",.... are optional. This means that if 0 is passed as a value, then the default value of the respective axis is used. ->see description of the parameters
+Whether the requested axis command is done/busy/error can be checked in the "Feedback" interface of the axis.
+For Example AxisMaster.Feedback.Done, AxisMaster.Feedback.ErrorId,...
+*)
+IF bMoveRel THEN
+	bMoveRel := FALSE;
+	AxisMaster.MoveRelative(fDistance:=100,0,0,0,0,0);
+	// or AxisMaster.MoveRelative(fDistance:=100, fVelocity := 100, fAcceleration := 100, fDeceleration := 100, fJerk := 100,eBufferMode := MC_Aborting);
+END_IF
+
+IF bMoveAbs THEN
+	bMoveAbs := FALSE; 
+	AxisMaster.MoveAbsolute(fPosition:=10000,0,0,0,0,0);
+	// or AxisMaster.MoveAbsolute(fPosition:=100,fVelocity := 100,fAcceleration:=100,fDeceleration := 100,fJerk:=100,eBufferMode := MC_Aborting);
+END_IF
+
+(*GearIn
+This motion command works similar to the ones above.
+The method must be executed on the slave axis. The master axis to be used is transferred here once and does not have to be transferred in each cycle as with the "MC_GearIn" block. 
+Because here is worked with interfaces, the GearIn is also absolutely "Online change safe". 
+*)
+IF bGearIn THEN
+	bGearIn := FALSE;
+	AxisSlave.GearIn(AxisMaster, fRatioNumerator := 1, nRatioDenominator := 1, 0,0,0);
+	// or AxisSlave.GearIn(ipMasterAxisAdapter := AxisMaster, fAcceleration := 50, fDeceleration:=50, fJerk := 50, fRatioNumerator := 1, nRatioDenominator := 1);
+END_IF
+
+IF bMultigear THEN
+	bMultigear := FALSE;
+	(*Coupling all at once or also only selectively possible. Up to 4 Axis
+	Additional axes can also be added later. For this purpose, the axis must be standing still.*)
+	AxisSlave.MultiGearIn(AxisMultigear1, fRatioNumerator := 1, nRatioDenominator := 1, 0,0,0);
+	AxisSlave.MultiGearIn(AxisMultigear2, fRatioNumerator := 1, nRatioDenominator := 2, 0,0,0);
+	AxisSlave.MultiGearIn(AxisMultigear3, fRatioNumerator := 2, nRatioDenominator := 1, 0,0,0);
+	AxisSlave.MultiGearIn(AxisMultigear4, fRatioNumerator := 2, nRatioDenominator := 1, 0,0,0);
+END_IF
+
+IF bGearOut THEN
+	bGearOut := FALSE;
+	AxisSlave.GearOut();
+END_IF
+
+
+(*Example program flow
+Endlesmove with the use of eBufferMode+belnding. Write next move command in buffer if the buffer is empty.*)
+IF bSeqeBufferMode THEN
+	CASE nSeqBufferStep OF
+		0: //Disable Axis1
+			AxisMaster.PowerOff();
+			nSeqBufferStep := nSeqBufferStep + 1;
+		
+		1: //Wait for feedback
+			IF AxisMaster.Feedback.Done THEN
+				nSeqBufferStep := nSeqBufferStep + 1;
+			END_IF
+			
+		2: //Enable Axis1
+			AxisMaster.PowerOn();
+			nSeqBufferStep := nSeqBufferStep + 1;
+		
+		3: //Wait for feedback
+			IF AxisMaster.Feedback.Done THEN
+	           nSeqBufferStep := nSeqBufferStep + 1;
+			END_IF
+			
+		4: 	//Move to Start
+			AxisMaster.MoveAbsolute(fPosition:=0.0 ,0,0,0,0,0);
+			nSeqBufferStep := nSeqBufferStep + 1;
+			
+		5: //Start first Move to 100mm
+			IF AxisMaster.BufferEmpty THEN
+				AxisMaster.MoveAbsolute(fPosition:=100.0 , fVelocity:= 25.0 ,0,0,0,eBufferMode := MC_Buffered);
+				nSeqBufferStep := nSeqBufferStep + 1;
+			END_IF
+		
+		6: //Blend In fast move to 1000mm
+			IF AxisMaster.BufferEmpty THEN
+				AxisMaster.MoveAbsolute(fPosition:=400.0 , fVelocity:= 35.0 ,0,0,0,eBufferMode := MC_BlendingHigh);
+				nSeqBufferStep := nSeqBufferStep + 1;
+			END_IF
+		
+		7: //Blend In Relative fast move 1000mm
+			IF AxisMaster.BufferEmpty THEN
+				AxisMaster.MoveRelative(fDistance:=1000.0 , fVelocity:= 50.0 ,0,0,0,eBufferMode := MC_BlendingHigh);
+				nSeqBufferStep := nSeqBufferStep + 1;
+			END_IF
+		
+		8: //Blend In slow velocity 
+			IF AxisMaster.BufferEmpty THEN
+				AxisMaster.MoveVelocity(fVelocity:= 100.0 ,0,0,0,eDirection:=MC_Positive_Direction, eBufferMode := MC_BlendingHigh );
+				nSeqBufferStep := nSeqBufferStep + 1;
+			END_IF			
+			
+		9: //Wait for feedback
+			IF AxisMaster.Feedback.Done THEN
+				nSeqBufferStep := nSeqBufferStep + 1;
+			END_IF		
+			
+		10: //Stop Axis1
+			AxisMaster.Stop(0,0);
+			nSeqBufferStep := nSeqBufferStep + 1;
+		
+		11: //Wait for feedback
+			IF AxisMaster.Feedback.Done THEN
+				nSeqBufferStep := nSeqBufferStep + 1;
+			END_IF	
+			
+		12: //Restart
+			nSeqBufferStep := 0;
+	END_CASE
+ELSE
+	nSeqBufferStep := 0;	
+END_IF
+
+(*Example program flow*)
+//Endless move whitout eBufferMode.
+IF bSeqEndless THEN
+	CASE nSeqEndlessStep OF
+		0: //Disable Axis1+2
+			AxisMaster.PowerOff();
+			AxisSlave.PowerOff();
+			nSeqEndlessStep := nSeqEndlessStep + 1;
+		
+		1: //Wait for feedback
+			IF AxisMaster.Feedback.Done AND AxisSlave.Feedback.Done THEN
+				nSeqEndlessStep := nSeqEndlessStep + 1;
+			END_IF
+			
+		2: //Enable Axis1+2
+			AxisMaster.PowerOn();
+			AxisSlave.PowerOn();
+			nSeqEndlessStep := nSeqEndlessStep + 1;
+		
+		3: //Wait for feedback
+			IF AxisMaster.Feedback.Done AND AxisSlave.Feedback.Done THEN
+				nSeqEndlessStep := nSeqEndlessStep + 1;
+			END_IF
+			
+		4: //Set zero position Axis1+2
+			AxisMaster.SetActPosition(0.0);
+			AxisSlave.SetActPosition(0.0);
+			nSeqEndlessStep := nSeqEndlessStep + 1;
+		
+		5: //Wait for feedback
+			IF AxisMaster.Feedback.Done AND AxisSlave.Feedback.Done THEN
+				nSeqEndlessStep := nSeqEndlessStep + 1;
+			END_IF
+			
+		6: //Run Axis1
+			AxisMaster.MoveRelative(fDistance:=100,0,0,0,0,0);	
+			nSeqEndlessStep := nSeqEndlessStep + 1;
+			
+		7: //Wait for feedback
+			IF AxisMaster.Feedback.Done THEN
+				nSeqEndlessStep := nSeqEndlessStep + 1;
+			END_IF
+			
+		8: //Gear IN Axis2 to Axis 1
+			AxisSlave.GearIn(ipMasterAxisAdapter := AxisMaster, fRatioNumerator := 1, nRatioDenominator := 1, 0,0,0);
+			nSeqEndlessStep := nSeqEndlessStep + 1;			
+
+		9: //Wait for feedback
+			IF AxisSlave.Feedback.Done THEN
+				nSeqEndlessStep := nSeqEndlessStep + 1;
+			END_IF
+			
+		10://Run Axis1 + Axis Slave
+			AxisMaster.MoveRelative(fDistance:=100,0,0,0,0,0);	
+			nSeqEndlessStep := nSeqEndlessStep + 1;
+			
+		11: //Wait for feedback
+			IF AxisMaster.Feedback.Done THEN
+				nSeqEndlessStep := nSeqEndlessStep + 1;
+			END_IF
+			
+		12://Run Axis1 + Axis Slave
+			AxisMaster.MoveRelative(fDistance:=100,fVelocity:= 50,fAcceleration:= 5,0,0,0);	
+			nSeqEndlessStep := nSeqEndlessStep + 1;
+			
+		13: //Wait for feedback
+			IF AxisMaster.Feedback.Done THEN
+				nSeqEndlessStep := nSeqEndlessStep + 1;
+			END_IF	
+
+		14: //Stop(and Gear Out) Axis1+2
+			AxisMaster.Stop(0,0);
+			AxisSlave.Stop(0,0);
+			nSeqEndlessStep := nSeqEndlessStep + 1;
+		
+		15: //Wait for feedback
+			IF AxisMaster.Feedback.Done AND AxisSlave.Feedback.Done THEN
+				nSeqEndlessStep := nSeqEndlessStep + 1;
+			END_IF	
+			
+		16: //Restart Seq
+			nSeqEndlessStep := 0;	
+			
+	END_CASE
+ELSE
+	nSeqEndlessStep := 0;	
+END_IF
+
+(*Update
+The method "Update" must be called for each module. And always at the end of the program*)
+AxisMaster.Update();
+AxisSlave.Update();
+AxisMultigear1.Update();
+AxisMultigear2.Update();
+AxisMultigear3.Update();
+AxisMultigear4.Update();
+
+(*Example of how this FB can be easily visualized on the HMI.
+The FB_NcAxis_Hmi converts the large FB_NcAxis in an more compact HMI frindly structure*) 
+//Variante 1:
+fbHmiAxisMaster.Update();
+fbHmiAxisSlave.Update();
+
+//Variante 2:
+FOR nIdx := 0 TO 9 DO
+	aFbHmiAxis[nIdx].Update();
+END_FOR]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>
