@@ -1,4 +1,4 @@
-# [void*.ers] - TwinCAT CHALET V1.3
+# [void*.ers] - TwinCAT CHALET V1.4
 
 # Visual Studio
 **/.vs/
@@ -47,9 +47,9 @@ LineIDs.dbg
 
 
 # Libraries
-**/_Libraries/
+**/_Libraries/*
 # But not these files...
-!/_Libraries/beckhoff ch/
+!**/_Libraries/beckhoff ch/
 
 
 # TwinCAT HMI related
