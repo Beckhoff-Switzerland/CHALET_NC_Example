@@ -984,8 +984,8 @@ External Setpoint Generation:
 	</DataTypes>
 	<Project ProjectGUID="{1D400AD5-3120-42B3-9A2B-4121D1EDE857}" TargetNetId="192.168.1.20.1.1" Target64Bit="true" SaveToTarget="false" ShowHideConfigurations="#x3c6">
 		<System>
-			<Settings MaxCpus="4" NonWinCpus="1">
-				<Cpu CpuId="3" BaseTime="5000"/>
+			<Settings MaxCpus="12" NonWinCpus="1">
+				<Cpu CpuId="11" BaseTime="5000"/>
 				<IoIdleTask Priority="8"/>
 			</Settings>
 			<Tasks>
@@ -996,7 +996,7 @@ External Setpoint Generation:
 		</System>
 		<Motion>
 			<NC>
-				<SafTask Priority="4" CycleTime="10000" AmsPort="501" IoAtBegin="true" SafTaskInfo="256">
+				<SafTask Priority="4" CycleTime="10000" AmsPort="501" IoAtBegin="true" AmsNetId="10.16.0.28.1.1" SafTaskInfo="256">
 					<Name>NC-Task 1 SAF</Name>
 					<Vars VarGrpType="1" InsertType="1">
 						<Name>Eingänge</Name>
@@ -1021,7 +1021,7 @@ External Setpoint Generation:
 		</Motion>
 		<Plc>
 			<Project GUID="{83C24E99-D180-4181-980B-747C7274C744}" Name="SPS1" PrjFilePath="SPS\SPS1.plcproj" TmcFilePath="SPS\SPS1.tmc" ReloadTmc="true" AmsPort="851" TargetArchiveSettings="#x000f" FileArchiveSettings="#x000e" CopyTmcToTarget="true" CopyTpyToTarget="false" SymbolicMapping="true">
-				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="SPS\SPS1.tmc" TmcHash="{D7C3997C-E88B-C2DE-BC7E-4290AD597004}">
+				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="SPS\SPS1.tmc" TmcHash="{B4446EDD-184E-5021-0609-F63D4851CFF8}">
 					<Name>Untitled1 Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Vars VarGrpType="1">

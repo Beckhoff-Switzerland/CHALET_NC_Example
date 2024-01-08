@@ -55,43 +55,43 @@
   </ItemGroup>
   <ItemGroup>
     <PlaceholderResolution Include="CHALET_BaseComponents">
-      <Resolution>CHALET_BaseComponents, * (Beckhoff CH)</Resolution>
+      <Resolution>CHALET_BaseComponents, 3.0.1 (Beckhoff CH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CHALET_Nc">
-      <Resolution>CHALET_Nc, * (Beckhoff CH)</Resolution>
+      <Resolution>CHALET_Nc, 3.0.4 (Beckhoff CH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc2_Drive">
-      <Resolution>Tc2_Drive, * (Beckhoff Automation GmbH)</Resolution>
+      <Resolution>Tc2_Drive, 3.3.10.0 (Beckhoff Automation GmbH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc2_EtherCAT">
-      <Resolution>Tc2_EtherCAT, * (Beckhoff Automation GmbH)</Resolution>
+      <Resolution>Tc2_EtherCAT, 3.4.2.0 (Beckhoff Automation GmbH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc2_IoFunctions">
-      <Resolution>Tc2_IoFunctions, * (Beckhoff Automation GmbH)</Resolution>
+      <Resolution>Tc2_IoFunctions, 3.3.13.0 (Beckhoff Automation GmbH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc2_Math">
-      <Resolution>Tc2_Math, * (Beckhoff Automation GmbH)</Resolution>
+      <Resolution>Tc2_Math, 3.4.3.0 (Beckhoff Automation GmbH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc2_MC2">
-      <Resolution>Tc2_MC2, * (Beckhoff Automation GmbH)</Resolution>
+      <Resolution>Tc2_MC2, 3.3.56.0 (Beckhoff Automation GmbH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc2_MC2_Drive">
-      <Resolution>Tc2_MC2_Drive, * (Beckhoff Automation GmbH)</Resolution>
+      <Resolution>Tc2_MC2_Drive, 3.3.34.0 (Beckhoff Automation GmbH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc2_Standard">
-      <Resolution>Tc2_Standard, * (Beckhoff Automation GmbH)</Resolution>
+      <Resolution>Tc2_Standard, 3.3.3.0 (Beckhoff Automation GmbH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc2_System">
-      <Resolution>Tc2_System, * (Beckhoff Automation GmbH)</Resolution>
+      <Resolution>Tc2_System, 3.5.3.0 (Beckhoff Automation GmbH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc2_Utilities">
-      <Resolution>Tc2_Utilities, * (Beckhoff Automation GmbH)</Resolution>
+      <Resolution>Tc2_Utilities, 3.4.8.0 (Beckhoff Automation GmbH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc3_EventLogger">
-      <Resolution>Tc3_EventLogger, * (Beckhoff Automation GmbH)</Resolution>
+      <Resolution>Tc3_EventLogger, 3.1.33.0 (Beckhoff Automation GmbH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc3_Module">
-      <Resolution>Tc3_Module, * (Beckhoff Automation GmbH)</Resolution>
+      <Resolution>Tc3_Module, 3.3.23.0 (Beckhoff Automation GmbH)</Resolution>
     </PlaceholderResolution>
   </ItemGroup>
   <ItemGroup>

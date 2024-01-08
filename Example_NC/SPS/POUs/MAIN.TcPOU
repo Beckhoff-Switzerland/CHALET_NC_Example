@@ -38,7 +38,8 @@ VAR
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[(*Initialize
+      <ST><![CDATA[
+(*Initialize
 only when each module is initialized can the rest of the program be started. otherwise the execution is skipped with RETURN *)
 IF NOT bInitDone THEN
 		AxisMaster.Initialize();
