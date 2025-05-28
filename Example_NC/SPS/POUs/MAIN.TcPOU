@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
   <POU Name="MAIN" Id="{2577fafb-c6d5-48fa-b818-1b410393aaca}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM MAIN
 VAR
@@ -14,7 +14,9 @@ VAR
 	AxisMultigear4 	: FB_NcAxis;  // or FB_Adapter_AXIS_REF if whole axis logic is outside
 	
 	bEnable, bMoveRel, bGearIn, bMoveAbs, bStop, bReset, bMultigear, bGearOut, bSeqEndless, bMoveAbsBuffer, bMoveRelBuffer, bSeqeBufferMode : BOOL;	
+
 	nSeqEndlessStep, nSeqBufferStep : UINT;
+
 	
 	(*Example of how this FB can be easily visualized on the HMI.
 	The FB_NcAxis_Hmi converts the large FB_NcAxis in an more compact HMI frindly structure*) 
@@ -35,11 +37,15 @@ VAR
 												(ipAxis := 0),
 												(ipAxis := 0)];
                                                   
+												
+	//Example Homing			
+	bHomeSensorLinkedToNC AT %Q* : BOOL;			
+	bHomeCmdNC, bHomeCmdPLC : BOOL;			
+	bHomeSensorPLC : BOOL;
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[
-(*Initialize
+      <ST><![CDATA[(*Initialize
 only when each module is initialized can the rest of the program be started. otherwise the execution is skipped with RETURN *)
 IF NOT bInitDone THEN
 		AxisMaster.Initialize();
@@ -54,8 +60,7 @@ IF NOT bInitDone THEN
 					AxisMultigear1.Initialized AND
 					AxisMultigear2.Initialized AND
 					AxisMultigear3.Initialized AND
-					AxisMultigear4.Initialized;
-					
+					AxisMultigear4.Initialized;		
 	RETURN;
 END_IF
 
@@ -88,6 +93,8 @@ IF bReset THEN
 	AxisMaster.Reset();
 	AxisSlave.Reset();
 END_IF
+
+
 
 (*MoveRelative
 A method always has a fixed number of parameters (VAR_IN) that it must get when it is called. 
@@ -220,9 +227,9 @@ IF bSeqEndless THEN
 				nSeqEndlessStep := nSeqEndlessStep + 1;
 			END_IF
 			
-		2: //Enable Axis1+2
-			AxisMaster.PowerOn();
-			AxisSlave.PowerOn();
+		2: //Set zero position Axis1+2
+			AxisMaster.SetActPosition(0.0);
+			AxisSlave.SetActPosition(0.0);
 			nSeqEndlessStep := nSeqEndlessStep + 1;
 		
 		3: //Wait for feedback
@@ -230,9 +237,9 @@ IF bSeqEndless THEN
 				nSeqEndlessStep := nSeqEndlessStep + 1;
 			END_IF
 			
-		4: //Set zero position Axis1+2
-			AxisMaster.SetActPosition(0.0);
-			AxisSlave.SetActPosition(0.0);
+		4: //Enable Axis1+2
+			AxisMaster.PowerOn();
+			AxisSlave.PowerOn();
 			nSeqEndlessStep := nSeqEndlessStep + 1;
 		
 		5: //Wait for feedback
@@ -268,7 +275,7 @@ IF bSeqEndless THEN
 			END_IF
 			
 		12://Run Axis1 + Axis Slave
-			AxisMaster.MoveRelative(fDistance:=100,fVelocity:= 50,fAcceleration:= 5,0,0,0);	
+			AxisMaster.MoveRelative(fDistance:=100,fVelocity:= 50,fAcceleration:= 20,0,0,0);	
 			nSeqEndlessStep := nSeqEndlessStep + 1;
 			
 		13: //Wait for feedback
@@ -294,6 +301,11 @@ ELSE
 	nSeqEndlessStep := 0;	
 END_IF
 
+
+Example_HomingNC();
+Example_HomingPLC();
+
+
 (*Update
 The method "Update" must be called for each module. And always at the end of the program*)
 AxisMaster.Update();
@@ -314,5 +326,119 @@ FOR nIdx := 0 TO 9 DO
 	aFbHmiAxis[nIdx].Update();
 END_FOR]]></ST>
     </Implementation>
+    <Method Name="Example_HomingNC" Id="{d2cdd538-7672-4f73-91b4-5f9f4a4fd038}">
+      <Declaration><![CDATA[METHOD Example_HomingNC : BOOL
+VAR	
+	fDummy : LREAL;
+	bDummy : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(*
+Homing() vs SetPosition()
+	Homing refers to an axis initialization run during which the correct actual position is determined by means of a reference signal. This can be NC-guided, as default described here:
+	  - The axis is at a random position.
+	  - The axis moves in the parameterized direction and searches for the reference switch (referencing cam/calibration cam).
+	  - The axis reverses as soon as the referencing cam is detected.
+	  - The axis moves away from the referencing cam and detects the falling edge of the cam signal.
+	  - The reference position is set and the axis stops. The standstill position of the axis deviates slightly from the reference position.
+
+	
+	However, if the current position of the axis is known from the start, it is better to use a SetPosition().
+	
+	With Homing, the position is not saved permanently. 
+	With SetPosition, the position can be stored in the encoder, in the drive or also not permanently *)
+
+
+
+(*Parameterization:
+	The parameterization of the home command takes place in the NC! 
+	To do this, set the parameters in:
+	- NC-Axis(Parameters) Homing speed
+	- NC-Axis>Encoder(Parameters) Homing mode
+		Reference Mode: "Homing Sensor Only"
+		Homing Sensor Source "Digital Input x" 
+			Link Hardware-Home-Sensor-Input to NC-Axis>Drive>Inputs>nState8.x
+*)
+
+  
+  
+//Axis musst be enabled but whitout an active move cmd
+IF bHomeCmdNC AND AxisMaster.MotionState = MC_AXISSTATE_STANDSTILL THEN
+	bHomeCmdNC := FALSE;
+	AxisMaster.Homing(fPosition := 0.0);
+END_IF
+
+
+//During homing, a different speed in positive and negative direction can be observed depending on the sequence step
+fDummy := AxisMaster.SetVelocity;
+fDummy := AxisMaster.SetPosition;
+
+//This is for testing, normaly the signal is direct linked from hardware to NC
+//NC-Axis>Drive>Inputs>nState8.x
+bHomeSensorLinkedToNC := bHomeSensorLinkedToNC;
+
+
+//Status information
+bDummy := AxisMaster.getAxisRef.Status.HomingBusy;
+bDummy := AxisMaster.getAxisRef.Status.Homed;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Example_HomingPLC" Id="{801d1bdf-f319-4564-9350-3ec9a7df3ee9}">
+      <Declaration><![CDATA[METHOD Example_HomingPLC : BOOL
+VAR	
+	fDummy : LREAL;
+	bDummy : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(*
+Homing() vs SetPosition()
+	Homing refers to an axis initialization run during which the correct actual position is determined by means of a reference signal. This can be NC-guided, as default described here:
+	  - The axis is at a random position.
+	  - The axis moves in the parameterized direction and searches for the reference switch (referencing cam/calibration cam).
+	  - The axis reverses as soon as the referencing cam is detected.
+	  - The axis moves away from the referencing cam and detects the falling edge of the cam signal.
+	  - The reference position is set and the axis stops. The standstill position of the axis deviates slightly from the reference position.
+
+	
+	However, if the current position of the axis is known from the start, it is better to use a SetPosition().
+	
+	With Homing, the position is not saved permanently. 
+	With SetPosition, the position can be stored in the encoder, in the drive or also not permanently *)
+
+
+
+(*Parameterization:
+	The parameterization of the home command takes place in the NC! 
+-->The default NC parameters allow homing via PLC
+	- NC-Axis(Parameters) Homing speed
+	- NC-Axis>Encoder(Parameters) Homing mode
+		Homing Sensor Source "Default" 
+*)
+
+
+  
+//Axis musst be enabled but whitout an active move cmd
+IF bHomeCmdPLC AND AxisSlave.MotionState = MC_AXISSTATE_STANDSTILL THEN
+	bHomeCmdPLC := FALSE;
+	AxisSlave.Homing(fPosition := 0.0);
+END_IF
+
+//The status of the home sensor is transferred to the FB here
+AxisSlave.HomingSensor := bHomeSensorPLC;
+
+
+//During homing, a different speed in positive and negative direction can be observed depending on the sequence step
+fDummy := AxisSlave.SetVelocity;
+fDummy := AxisSlave.SetPosition;
+
+//Status information
+bDummy := AxisMaster.getAxisRef.Status.HomingBusy;
+bDummy := AxisMaster.getAxisRef.Status.Homed;
+]]></ST>
+      </Implementation>
+    </Method>
   </POU>
 </TcPlcObject>

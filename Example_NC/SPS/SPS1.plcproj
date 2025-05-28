@@ -55,10 +55,10 @@
   </ItemGroup>
   <ItemGroup>
     <PlaceholderResolution Include="CHALET_BaseComponents">
-      <Resolution>CHALET_BaseComponents, 3.4.5 (Beckhoff CH)</Resolution>
+      <Resolution>CHALET_BaseComponents, 3.7.0 (Beckhoff CH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="CHALET_Nc">
-      <Resolution>CHALET_Nc, 3.2.1 (Beckhoff CH)</Resolution>
+      <Resolution>CHALET_Nc, 3.4.1 (Beckhoff CH)</Resolution>
     </PlaceholderResolution>
     <PlaceholderResolution Include="Tc2_Drive">
       <Resolution>Tc2_Drive, 3.3.10.0 (Beckhoff Automation GmbH)</Resolution>
